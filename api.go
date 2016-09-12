@@ -8,7 +8,6 @@ import (
 	"io/ioutil"
 	"math/rand"
 	"net/http"
-	"net/url"
 	"strconv"
 )
 
@@ -107,25 +106,26 @@ func (this *User) GetSelfInfo() SelfInfo {
 func (this *User) SendMessage(uin int64, content string) error {
 	uinStr := strconv.FormatInt(uin, 10)
 	msgId := strconv.Itoa(rand.Intn(8))
-	r := `r={"to":` + uinStr + `,"content":"[\"` + content + `\",[\"font\",{\"name\":\"宋体\",\"size\":10,\"style\":[0,0,0],\"color\":\"000000\"}]]","face":525,"clientid":53999199,"msg_id":` + msgId + `,"psessionid":"` + this.Pssesionid + `"}`
-	req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/send_buddy_msg2", bytes.NewReader([]byte(url.QueryEscape(r))))
-	req.Header.Add("Referer", "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1")
+	req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/send_buddy_msg2", bytes.NewReader([]byte("r=%7B%22to%22%3A"+uinStr+"%2C%22content%22%3A%22%5B%5C%22"+content+"%5C%22%2C%5B%5C%22font%5C%22%2C%7B%5C%22name%5C%22%3A%5C%22%E5%AE%8B%E4%BD%93%5C%22%2C%5C%22size%5C%22%3A10%2C%5C%22style%5C%22%3A%5B0%2C0%2C0%5D%2C%5C%22color%5C%22%3A%5C%22000000%5C%22%7D%5D%5D%22%2C%22face%22%3A525%2C%22clientid%22%3A53999199%2C%22msg_id%22%3A"+msgId+"%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%7D")))
+	req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	res, _ := this.Client.Do(req)
 	defer res.Body.Close()
 	data, _ := ioutil.ReadAll(res.Body)
 	var result struct {
+		Retcode int
 		ErrCode int
 		Msg     string
 	}
 	json.Unmarshal(data, &result)
-	if result.ErrCode != 0 {
+	if result.ErrCode != 0 || result.Retcode != 0 {
 		return errors.New(result.Msg)
 	}
 	return nil
 }
 
 type Message struct {
+	Type    string //one of message|group_message
 	From    int64
 	To      int64
 	Content string
@@ -153,14 +153,13 @@ func (this *User) Poll() chan Message {
 		fmt.Println(string(data))
 		json.Unmarshal(data, &result)
 		for _, it := range result.Result {
-			if it.Poll_type == "message" {
-				msg := Message{
-					From:    it.Value.From_uin,
-					To:      it.Value.To_uin,
-					Content: it.Value.Content[1],
-				}
-				c <- msg
+			msg := Message{
+				Type:    it.Poll_type,
+				From:    it.Value.From_uin,
+				To:      it.Value.To_uin,
+				Content: it.Value.Content[1],
 			}
+			c <- msg
 		}
 	}()
 	return c

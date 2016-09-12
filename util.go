@@ -1,9 +1,12 @@
 package qqbot
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"image/png"
+	"io/ioutil"
 	"net"
 	"net/http"
 	"strconv"
@@ -57,4 +60,21 @@ func WebHandler(c chan image.Image) {
 	fmt.Println("Need verify,please open http://localhost:8081/captcha")
 	server := http.Server{Handler: r}
 	server.Serve(l)
+}
+
+func Tulin(uid int64, info, key string) string {
+	fmt.Println("from:", uid, info)
+	uidStr := strconv.FormatInt(uid, 10)
+	str := `{"key":"` + key + `","info":"` + info + `","userid":"` + uidStr + `"}`
+	res, _ := http.Post("http://www.tuling123.com/openapi/api", "application/json;charset=utf-8", bytes.NewReader([]byte(str)))
+	defer res.Body.Close()
+	data, _ := ioutil.ReadAll(res.Body)
+	var result struct {
+		Code int64
+		Text string
+		Url  string
+	}
+	json.Unmarshal(data, &result)
+	fmt.Println("to:", uid, result.Text)
+	return result.Text
 }

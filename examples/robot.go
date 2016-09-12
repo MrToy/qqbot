@@ -1,12 +1,11 @@
 package main
 
 import (
-	"fmt"
+	//"fmt"
 	"github.com/MrToy/qqbot"
 )
 
 func main() {
-	fmt.Println("start")
 	store := qqbot.NewUserStore()
 	defer store.DB.Close()
 	user := store.Get()
@@ -16,8 +15,9 @@ func main() {
 	}
 	store.Put(user)
 	user.Login()
-	fmt.Println(user.SendMessage(452719485, "2333"))
 	for msg := range user.Poll() {
-		fmt.Println(msg)
+		if msg.Type == "message" {
+			go user.SendMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
+		}
 	}
 }
