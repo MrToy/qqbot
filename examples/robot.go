@@ -15,9 +15,15 @@ func main() {
 	}
 	store.Put(user)
 	user.Login()
+
+	user.GetOnline()
+
 	for msg := range user.Poll() {
 		if msg.Type == "message" {
 			go user.SendMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
+		}
+		if msg.Type == "group_message" {
+			go user.SendGroupMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
 		}
 	}
 }

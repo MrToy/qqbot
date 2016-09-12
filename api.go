@@ -15,6 +15,7 @@ type Friend struct {
 	Nick     string
 	MarkName string
 	Uin      int64
+	Status   string
 }
 
 func (this *User) GetFriends() []Friend {
@@ -103,10 +104,48 @@ func (this *User) GetSelfInfo() SelfInfo {
 	return result.Result
 }
 
+func (this *User) GetOnline() []Friend {
+	req, _ := http.NewRequest("GET", "http://d1.web2.qq.com/channel/get_online_buddies2?vfwebqq="+this.Vfwebqq+"&clientid=53999199&psessionid="+this.Pssesionid+"&t=1473673565772", nil)
+	req.Header.Add("Referer", "http://d1.web2.qq.com/proxy.html?v=20151105001&callback=1&id=2")
+	res, _ := this.Client.Do(req)
+	defer res.Body.Close()
+	data, _ := ioutil.ReadAll(res.Body)
+	var result struct {
+		Retcode int
+		Result  []Friend
+	}
+	json.Unmarshal(data, &result)
+	if result.Retcode != 0 {
+		fmt.Println(string(data))
+	}
+	return result.Result
+}
+
 func (this *User) SendMessage(uin int64, content string) error {
 	uinStr := strconv.FormatInt(uin, 10)
 	msgId := strconv.Itoa(rand.Intn(8))
 	req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/send_buddy_msg2", bytes.NewReader([]byte("r=%7B%22to%22%3A"+uinStr+"%2C%22content%22%3A%22%5B%5C%22"+content+"%5C%22%2C%5B%5C%22font%5C%22%2C%7B%5C%22name%5C%22%3A%5C%22%E5%AE%8B%E4%BD%93%5C%22%2C%5C%22size%5C%22%3A10%2C%5C%22style%5C%22%3A%5B0%2C0%2C0%5D%2C%5C%22color%5C%22%3A%5C%22000000%5C%22%7D%5D%5D%22%2C%22face%22%3A525%2C%22clientid%22%3A53999199%2C%22msg_id%22%3A"+msgId+"%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%7D")))
+	req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, _ := this.Client.Do(req)
+	defer res.Body.Close()
+	data, _ := ioutil.ReadAll(res.Body)
+	var result struct {
+		Retcode int
+		ErrCode int
+		Msg     string
+	}
+	json.Unmarshal(data, &result)
+	if result.ErrCode != 0 || result.Retcode != 0 {
+		return errors.New(result.Msg)
+	}
+	return nil
+}
+
+func (this *User) SendGroupMessage(uin int64, content string) error {
+	uinStr := strconv.FormatInt(uin, 10)
+	msgId := strconv.Itoa(rand.Intn(8))
+	req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/send_qun_msg2", bytes.NewReader([]byte("r=%7B%22group_uin%22%3A"+uinStr+"%2C%22content%22%3A%22%5B%5C%22"+content+"%5C%22%2C%5B%5C%22font%5C%22%2C%7B%5C%22name%5C%22%3A%5C%22%E5%AE%8B%E4%BD%93%5C%22%2C%5C%22size%5C%22%3A10%2C%5C%22style%5C%22%3A%5B0%2C0%2C0%5D%2C%5C%22color%5C%22%3A%5C%22000000%5C%22%7D%5D%5D%22%2C%22face%22%3A525%2C%22clientid%22%3A53999199%2C%22msg_id%22%3A"+msgId+"%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%7D")))
 	req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
 	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
 	res, _ := this.Client.Do(req)
@@ -134,32 +173,37 @@ type Message struct {
 func (this *User) Poll() chan Message {
 	c := make(chan Message)
 	go func() {
-		req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/poll2", bytes.NewReader([]byte("r=%7B%22ptwebqq%22%3A%22"+this.Ptwebqq+"%22%2C%22clientid%22%3A53999199%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%2C%22key%22%3A%22%22%7D")))
-		req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
-		res, _ := this.Client.Do(req)
-		defer res.Body.Close()
-		data, _ := ioutil.ReadAll(res.Body)
-		var result struct {
-			Retcode int
-			Result  []struct {
-				Poll_type string
-				Value     struct {
-					From_uin int64
-					To_uin   int64
-					Content  [2]string
+		for {
+			req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/poll2", bytes.NewReader([]byte("r=%7B%22ptwebqq%22%3A%22"+this.Ptwebqq+"%22%2C%22clientid%22%3A53999199%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%2C%22key%22%3A%22%22%7D")))
+			req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
+			res, err := this.Client.Do(req)
+			if err != nil {
+				continue
+			}
+			defer res.Body.Close()
+			data, _ := ioutil.ReadAll(res.Body)
+			var result struct {
+				Retcode int
+				Result  []struct {
+					Poll_type string
+					Value     struct {
+						From_uin int64
+						To_uin   int64
+						Content  [2]string
+					}
 				}
 			}
-		}
-		fmt.Println(string(data))
-		json.Unmarshal(data, &result)
-		for _, it := range result.Result {
-			msg := Message{
-				Type:    it.Poll_type,
-				From:    it.Value.From_uin,
-				To:      it.Value.To_uin,
-				Content: it.Value.Content[1],
+			fmt.Println(string(data))
+			json.Unmarshal(data, &result)
+			for _, it := range result.Result {
+				msg := Message{
+					Type:    it.Poll_type,
+					From:    it.Value.From_uin,
+					To:      it.Value.To_uin,
+					Content: it.Value.Content[1],
+				}
+				c <- msg
 			}
-			c <- msg
 		}
 	}()
 	return c

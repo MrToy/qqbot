@@ -25,7 +25,7 @@ type User struct {
 
 func NewUser() *User {
 	jar, _ := cookiejar.New(nil)
-	client := http.Client{Jar: jar}
+	client := http.Client{Jar: jar, Timeout: 20 * time.Second}
 	return &User{Client: client}
 }
 
