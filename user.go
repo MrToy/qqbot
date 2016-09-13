@@ -29,19 +29,19 @@ func NewUser() *User {
 	return &User{Client: client}
 }
 
-func (user *User) Update() {
+func (user *User) update() {
 	user.Client.Jar, _ = cookiejar.New(nil)
-	user.UpdateCookie()
-	user.UpdateCaptcha()
+	user.updateCookie()
+	user.updateCaptcha()
 }
 
-func (this *User) UpdateCookie() {
+func (this *User) updateCookie() {
 	req, _ := http.NewRequest("GET", "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com/proxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001&f_qr=0", nil)
 	res, _ := this.Client.Do(req)
 	defer res.Body.Close()
 }
 
-func (this *User) UpdateCaptcha() {
+func (this *User) updateCaptcha() {
 	req, _ := http.NewRequest("GET", "https://ssl.ptlogin2.qq.com/ptqrshow?appid=501004106&e=0&l=M&s=5&d=72&v=4", nil)
 	req.Header.Add("Referer", "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com/proxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20130723001&f_qr=0")
 	res, _ := this.Client.Do(req)
@@ -50,7 +50,7 @@ func (this *User) UpdateCaptcha() {
 	this.Captcha = img
 }
 
-func (this *User) CheckVerify() (int, string, string, string) {
+func (this *User) checkVerify() (int, string, string, string) {
 	req, _ := http.NewRequest("GET", "https://ssl.ptlogin2.qq.com/ptqrlogin?webqq_type=10&remember_uin=1&login2qq=1&aid=501004106&u1=http%3A%2F%2Fw.qq.com%2Fproxy.html%3Flogin2qq%3D1%26webqq_type%3D10&ptredirect=0&ptlang=2052&daid=164&from_ui=1&pttype=1&dumy=&fp=loginerroralert&action=0-0-112024&mibao_css=m_webqq&t=undefined&g=1&js_type=0&js_ver=10175&login_sig=&pt_randsalt=0", nil)
 	req.Header.Add("Referer", "https://ui.ptlogin2.qq.com/cgi-bin/login?daid=164&target=self&style=16&mibao_css=m_webqq&appid=501004106&enable_qlogin=0&no_verifyimg=1&s_url=http%3A%2F%2Fw.qq.com%2Fproxy.html&f_url=loginerroralert&strong_login=1&login_state=10&t=20131024001")
 	res, _ := this.Client.Do(req)
@@ -66,7 +66,7 @@ func (this *User) CheckVerify() (int, string, string, string) {
 	return status, link, info, name
 }
 
-func (this *User) UpdatePtwebqq(u string) {
+func (this *User) updatePtwebqq(u string) {
 	req, _ := http.NewRequest("GET", u, nil)
 	res, _ := this.Client.Do(req)
 	res.Body.Close()
@@ -81,7 +81,7 @@ type TxResult struct {
 	}
 }
 
-func (this *User) UpdateVfwebqq() TxResult {
+func (this *User) updateVfwebqq() TxResult {
 	u, _ := url.Parse("http://s.web2.qq.com/api/getvfwebqq")
 	var ptwebqq string
 	for _, it := range this.Client.Jar.Cookies(u) {
@@ -103,7 +103,7 @@ func (this *User) UpdateVfwebqq() TxResult {
 	return result
 }
 
-func (this *User) UpdateUin() TxResult {
+func (this *User) updateUin() TxResult {
 	req, _ := http.NewRequest("POST", "http://d1.web2.qq.com/channel/login2", bytes.NewReader([]byte("r=%7B%22ptwebqq%22%3A%22"+this.Ptwebqq+"%22%2C%22clientid%22%3A53999199%2C%22psessionid%22%3A%22%22%2C%22status%22%3A%22online%22%7D")))
 	req.Header.Add("Referer", "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1")
 	res, _ := this.Client.Do(req)
@@ -119,11 +119,11 @@ func (this *User) UpdateUin() TxResult {
 }
 
 func (this *User) Login() error {
-	if res := this.UpdateVfwebqq(); res.Retcode != 0 {
+	if res := this.updateVfwebqq(); res.Retcode != 0 {
 		fmt.Println(res)
 		return errors.New("登录失败")
 	}
-	if res := this.UpdateUin(); res.Retcode != 0 {
+	if res := this.updateUin(); res.Retcode != 0 {
 		fmt.Println(res)
 		return errors.New("登录失败")
 	}
@@ -134,15 +134,15 @@ func (user *User) WaitVerify() chan image.Image {
 	c := make(chan image.Image)
 	go func() {
 		for {
-			status, rawurl, info, _ := user.CheckVerify()
+			status, rawurl, info, _ := user.checkVerify()
 			fmt.Println(info)
 			if status == 0 {
-				user.UpdatePtwebqq(rawurl)
+				user.updatePtwebqq(rawurl)
 				close(c)
 				break
 			}
 			if status == 65 || status == -1 {
-				user.Update()
+				user.update()
 				c <- user.Captcha
 			}
 			time.Sleep(1 * time.Second)
