@@ -72,7 +72,7 @@ func (this *User) updatePtwebqq(u string) {
 	res.Body.Close()
 }
 
-type TxResult struct {
+type txResult struct {
 	Retcode int
 	Result  struct {
 		Vfwebqq    string
@@ -81,7 +81,7 @@ type TxResult struct {
 	}
 }
 
-func (this *User) updateVfwebqq() TxResult {
+func (this *User) updateVfwebqq() txResult {
 	u, _ := url.Parse("http://s.web2.qq.com/api/getvfwebqq")
 	var ptwebqq string
 	for _, it := range this.Client.Jar.Cookies(u) {
@@ -92,7 +92,7 @@ func (this *User) updateVfwebqq() TxResult {
 	req, _ := http.NewRequest("GET", "http://s.web2.qq.com/api/getvfwebqq?ptwebqq="+ptwebqq+"&clientid=53999199&psessionid=&t=1473584468629", nil)
 	req.Header.Add("Referer", "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1")
 	res, _ := this.Client.Do(req)
-	var result TxResult
+	var result txResult
 	data, _ := ioutil.ReadAll(res.Body)
 	res.Body.Close()
 	json.Unmarshal(data, &result)
@@ -103,13 +103,13 @@ func (this *User) updateVfwebqq() TxResult {
 	return result
 }
 
-func (this *User) updateUin() TxResult {
+func (this *User) updateUin() txResult {
 	req, _ := http.NewRequest("POST", "http://d1.web2.qq.com/channel/login2", bytes.NewReader([]byte("r=%7B%22ptwebqq%22%3A%22"+this.Ptwebqq+"%22%2C%22clientid%22%3A53999199%2C%22psessionid%22%3A%22%22%2C%22status%22%3A%22online%22%7D")))
 	req.Header.Add("Referer", "http://s.web2.qq.com/proxy.html?v=20130916001&callback=1&id=1")
 	res, _ := this.Client.Do(req)
 	data, _ := ioutil.ReadAll(res.Body)
 	res.Body.Close()
-	var result TxResult
+	var result txResult
 	json.Unmarshal(data, &result)
 	if result.Retcode == 0 {
 		this.Uin = result.Result.Uin
