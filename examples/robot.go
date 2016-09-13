@@ -1,12 +1,13 @@
 package main
 
 import (
-	//"fmt"
 	"github.com/MrToy/qqbot"
+	"os"
+	"path/filepath"
 )
 
 func main() {
-	store := qqbot.NewUserStore("./user")
+	store := qqbot.NewUserStore(filepath.Join(os.TempDir(), "qqbot"))
 	defer store.DB.Close()
 	user := store.Get()
 	if err := user.Login(); err != nil {
@@ -24,7 +25,7 @@ func main() {
 				user.SendMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
 			}
 			if msg.Type == "group_message" {
-				//go user.SendGroupMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
+				user.SendGroupMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
 			}
 		}()
 	}

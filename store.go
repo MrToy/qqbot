@@ -42,3 +42,9 @@ func (this *UserStore) Get() *User {
 	user.Client.Jar.SetCookies(u2, cookies2)
 	return user
 }
+
+func (this *UserStore) Clear() {
+	this.DB.Delete([]byte("user"), nil)
+	this.DB.Delete([]byte("cookies2"), nil)
+	this.DB.Delete([]byte("cookies"), nil)
+}

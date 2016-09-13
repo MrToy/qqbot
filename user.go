@@ -130,20 +130,20 @@ func (this *User) Login() error {
 	return nil
 }
 
-func (user *User) WaitVerify() chan image.Image {
+func (this *User) WaitVerify() chan image.Image {
 	c := make(chan image.Image)
 	go func() {
 		for {
-			status, rawurl, info, _ := user.checkVerify()
+			status, rawurl, info, _ := this.checkVerify()
 			fmt.Println(info)
 			if status == 0 {
-				user.updatePtwebqq(rawurl)
+				this.updatePtwebqq(rawurl)
 				close(c)
 				break
 			}
 			if status == 65 || status == -1 {
-				user.update()
-				c <- user.Captcha
+				this.update()
+				c <- this.Captcha
 			}
 			time.Sleep(1 * time.Second)
 		}
