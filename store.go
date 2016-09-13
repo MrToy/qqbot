@@ -5,16 +5,14 @@ import (
 	"github.com/syndtr/goleveldb/leveldb"
 	"net/http"
 	"net/url"
-	"os"
-	"path/filepath"
 )
 
 type UserStore struct {
 	DB *leveldb.DB
 }
 
-func NewUserStore() *UserStore {
-	db, _ := leveldb.OpenFile(filepath.Join(os.TempDir(), "qqbot"), nil)
+func NewUserStore(p string) *UserStore {
+	db, _ := leveldb.OpenFile(p, nil)
 	return &UserStore{DB: db}
 }
 

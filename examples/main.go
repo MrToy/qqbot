@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	store := qqbot.NewUserStore()
+	store := qqbot.NewUserStore("./user")
 	defer store.DB.Close()
 	user := store.Get()
 	if err := user.Login(); err != nil {
