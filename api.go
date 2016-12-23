@@ -163,6 +163,27 @@ func (this *User) SendGroupMessage(uin int64, content string) error {
 	return nil
 }
 
+func (this *User) SendDiscuMessage(uin int64, content string) error {
+	uinStr := strconv.FormatInt(uin, 10)
+	msgId := strconv.Itoa(rand.Intn(8))
+	req, _ := http.NewRequest("POST", "https://d1.web2.qq.com/channel/send_discu_msg2", bytes.NewReader([]byte("r=%7B%22did%22%3A"+uinStr+"%2C%22content%22%3A%22%5B%5C%22"+content+"%5C%22%2C%5B%5C%22font%5C%22%2C%7B%5C%22name%5C%22%3A%5C%22%E5%AE%8B%E4%BD%93%5C%22%2C%5C%22size%5C%22%3A10%2C%5C%22style%5C%22%3A%5B0%2C0%2C0%5D%2C%5C%22color%5C%22%3A%5C%22000000%5C%22%7D%5D%5D%22%2C%22face%22%3A525%2C%22clientid%22%3A53999199%2C%22msg_id%22%3A"+msgId+"%2C%22psessionid%22%3A%22"+this.Pssesionid+"%22%7D")))
+	req.Header.Add("Referer", "https://d1.web2.qq.com/cfproxy.html?v=20151105001&callback=1")
+	req.Header.Add("Content-Type", "application/x-www-form-urlencoded")
+	res, _ := this.Client.Do(req)
+	defer res.Body.Close()
+	data, _ := ioutil.ReadAll(res.Body)
+	var result struct {
+		Retcode int
+		ErrCode int
+		Msg     string
+	}
+	json.Unmarshal(data, &result)
+	if result.ErrCode != 0 || result.Retcode != 0 {
+		return errors.New(result.Msg)
+	}
+	return nil
+}
+
 type Message struct {
 	Type    string //one of message|group_message
 	From    int64

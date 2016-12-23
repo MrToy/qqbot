@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/MrToy/qqbot"
 	"os"
 	"path/filepath"
+
+	"github.com/MrToy/qqbot"
 )
 
 func main() {
@@ -21,11 +22,17 @@ func main() {
 
 	for msg := range user.Poll() {
 		go func() {
+			//个人消息
 			if msg.Type == "message" {
 				user.SendMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
 			}
+			//群消息
 			if msg.Type == "group_message" {
 				user.SendGroupMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
+			}
+			//讨论组消息
+			if msg.Type == "discu_message" {
+				user.SendDiscuMessage(msg.From, qqbot.Tulin(msg.From, msg.Content, "c9577a0e99dde2b9be80b6d56e54a1bc"))
 			}
 		}()
 	}
